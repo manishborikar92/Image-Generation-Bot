@@ -1,6 +1,7 @@
 import os
 import shutil
 import requests
+from flask import Flask
 from dotenv import load_dotenv
 from telegram import Update, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
@@ -61,6 +62,12 @@ async def handle_prompt(update: Update, context: CallbackContext):
     else:
         await update.message.reply_text("Sorry, I couldn't generate the images. Try again later.")
 
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running"
+
 # Main function
 def main():
     bot_token = os.getenv("BOT_TOKEN")
@@ -73,6 +80,15 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_prompt))
 
     print("Bot is running...")
+
+    # Run Flask app alongside the bot polling
+    from threading import Thread
+    def run_flask():
+        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))  # Port setup for Render
+
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
+    
     # Start polling
     application.run_polling()
 
